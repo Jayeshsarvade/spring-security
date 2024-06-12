@@ -23,6 +23,8 @@ public class User implements UserDetails {
     private Integer id;
     private String firstName;
     private String lastName;
+    private long contact;
+    private String about;
     private String email;
     private String password;
     private Role role;
