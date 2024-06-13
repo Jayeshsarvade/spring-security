@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/user").hasAnyAuthority(Role.USER.name())
                         .requestMatchers("/api/v1/user/**").hasAnyAuthority(Role.USER.name())
                         .requestMatchers("/api/v1/category/**").hasAnyAuthority(Role.USER.name())
+                        .requestMatchers("/api/v1/post/**").hasAnyAuthority(Role.USER.name())
                         .anyRequest().authenticated())
                 .sessionManagement(manager->manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(
