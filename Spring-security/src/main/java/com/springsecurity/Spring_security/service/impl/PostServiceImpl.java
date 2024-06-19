@@ -1,20 +1,19 @@
 package com.springsecurity.Spring_security.service.impl;
 
 
-import com.springsecurity.Spring_security.dto.CategoryDto;
-import com.springsecurity.Spring_security.dto.CommentDto;
-import com.springsecurity.Spring_security.dto.PostDto;
-import com.springsecurity.Spring_security.dto.UserDto;
+import com.springsecurity.Spring_security.dto.*;
 import com.springsecurity.Spring_security.entity.Category;
 import com.springsecurity.Spring_security.entity.Comment;
 import com.springsecurity.Spring_security.entity.Post;
 import com.springsecurity.Spring_security.entity.User;
 import com.springsecurity.Spring_security.exception.ResourceNotFoundException;
+import com.springsecurity.Spring_security.openfeignclient.AddressClient;
 import com.springsecurity.Spring_security.payload.PostResponse;
 import com.springsecurity.Spring_security.repository.CategoryRepository;
 import com.springsecurity.Spring_security.repository.PostRepository;
 import com.springsecurity.Spring_security.repository.UserRepository;
 import com.springsecurity.Spring_security.service.PostService;
+import feign.FeignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +40,9 @@ public class PostServiceImpl implements PostService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private AddressClient addressClient;
+
 
     /**
      * This method creates a new post in the system.
@@ -62,6 +64,19 @@ public class PostServiceImpl implements PostService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("category", "categoryId", categoryId));
 
+        AddressDto addressDto = null;
+        UserDto getUserFromPost = postDto.getUser();
+        if (getUserFromPost != null) {
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+                getUserFromPost.setAddressDto(addressDto);
+            } catch (FeignException.NotFound ex) {
+                String errorMessage = String.format("address not found with UserId: %d", userId);
+                logger.error(errorMessage);
+                getUserFromPost.setAddressDto(null);
+            }
+        }
+
         CategoryDto categoryDto = CategoryDto.builder().categoryId(category.getCategoryId())
                 .categoryTitle(category.getCategoryTitle()).categoryDescription(category.getCategoryDescription())
                 .build();
@@ -75,8 +90,7 @@ public class PostServiceImpl implements PostService {
                 .role(user.getRole()).build();
 
         Post post = Post.builder().postId(postDto.getPostId()).title(postDto.getTitle()).content(postDto.getContent())
-                .addDate(postDto.getAddedDate()).imageName(postDto.getImageName()).category(category)
-				.comments(null)
+                .addDate(postDto.getAddedDate()).imageName(postDto.getImageName()).category(category).comments(null)
                 .user(user).build();
         post.setImageName("def.png");
         post.setAddDate(new Date());
@@ -110,6 +124,19 @@ public class PostServiceImpl implements PostService {
         Post save = postRepository.save(post);
         logger.info("post updated: {} ", save);
 
+        AddressDto addressDto = null;
+        UserDto userDtoGetUser = postDto.getUser();
+        if (userDtoGetUser != null) {
+            int userId = postDto.getUser().getId();
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+                userDtoGetUser.setAddressDto(addressDto);
+            } catch (FeignException.NotFound ex) {
+                String errorMessage = String.format("address not found with UserId: %d", userId);
+                logger.error(errorMessage);
+                userDtoGetUser.setAddressDto(null);
+            }
+        }
 
         Set<CommentDto> commentsList = new HashSet<>();
         for (Comment comment : post.getComments()) {
@@ -129,7 +156,7 @@ public class PostServiceImpl implements PostService {
                 .password(post.getUser().getPassword())
                 .about(post.getUser().getAbout())
                 .role(post.getUser().getRole())
-                .build();
+                .addressDto(addressDto).build();
 
         return PostDto.builder().postId(post.getPostId()).title(post.getTitle()).content(post.getContent())
                 .imageName(post.getImageName()).addedDate(post.getAddDate()).category(categoryDto).user(userDto)
@@ -168,6 +195,15 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("post", "postId", postId));
         logger.debug("post found: {}", post);
 
+        Integer userId = post.getUser().getId();
+        AddressDto addressDto = null;
+        try {
+            addressDto = addressClient.getAddressByUserId(userId);
+        } catch (FeignException.NotFound ex) {
+            String errorMessage = String.format("address not found with UserId: %d", userId);
+            logger.error(errorMessage);
+        }
+
         Set<CommentDto> commentList = new HashSet<>();
         for (Comment comment : post.getComments()) {
             commentList.add(CommentDto.builder().id(comment.getId()).content(comment.getContent()).build());
@@ -181,16 +217,21 @@ public class PostServiceImpl implements PostService {
                 .id(post.getUser().getId())
                 .firstName(post.getUser().getFirstName())
                 .lastName(post.getUser().getLastName())
+                .contact(post.getUser().getContact())
                 .email(post.getUser().getEmail())
                 .password(post.getUser().getPassword())
                 .about(post.getUser().getAbout())
                 .role(post.getUser().getRole())
-                .build();
+                .addressDto(addressDto).build();
 
         PostDto postDto = PostDto.builder().postId(post.getPostId()).title(post.getTitle()).content(post.getContent())
                 .imageName(post.getImageName()).addedDate(post.getAddDate()).category(categoryDto).user(userDto)
                 .comments(commentList).build();
 
+        userDto = postDto.getUser();
+        if (userDto != null) {
+            userDto.setAddressDto(addressDto);
+        }
         return postDto;
     }
 
@@ -225,11 +266,9 @@ public class PostServiceImpl implements PostService {
                                 .firstName(post.getUser().getFirstName())
                                 .lastName(post.getUser().getLastName())
                                 .contact(post.getUser().getContact())
-                                .email(post.getUser().getEmail())
-                                .password(post.getUser().getPassword())
-                                .about(post.getUser().getAbout())
-                                .role(post.getUser().getRole())
-                                .build())
+                                .email(post.getUser().getEmail()).password(post.getUser().getPassword())
+                                .role(post.getUser().getRole()).about(post.getUser().getAbout())
+                                .addressDto(null).build())
                         .comments(
                                 post.getComments().stream()
                                         .map(comment -> CommentDto.builder().id(comment.getId())
@@ -240,8 +279,21 @@ public class PostServiceImpl implements PostService {
 
         List<PostDto> postDtoList = new ArrayList<>();
 
+        for (PostDto postDto : collect) {
+            int userId = postDto.getUser().getId();
+            AddressDto addressDto = null;
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+            } catch (FeignException.NotFound ex) {
+                logger.error("address not found for User with id: {}", userId);
+            }
+
+            postDto.getUser().setAddressDto(addressDto);
+            postDtoList.add(postDto);
+        }
+
         PostResponse postResponse = new PostResponse();
-        postResponse.setContent(collect);
+        postResponse.setContent(postDtoList);
         postResponse.setPageNo(pagePost.getNumber());
         postResponse.setPageSize(pagePost.getSize());
         postResponse.setTotalElement(pagePost.getTotalElements());
@@ -277,10 +329,9 @@ public class PostServiceImpl implements PostService {
                                 .firstName(post.getUser().getFirstName())
                                 .lastName(post.getUser().getLastName())
                                 .contact(post.getUser().getContact())
-                                .email(post.getUser().getEmail())
-                                .password(post.getUser().getPassword())
-                                .about(post.getUser().getAbout())
-                                .role(post.getUser().getRole()).build())
+                                .email(post.getUser().getEmail()).password(post.getUser().getPassword())
+                                .role(post.getUser().getRole()).about(post.getUser().getAbout())
+                                .addressDto(null).build())
                         .comments(
                                 post.getComments().stream()
                                         .map(comment -> CommentDto.builder().id(comment.getId())
@@ -290,8 +341,21 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
 
         List<PostDto> postDtoList = new ArrayList<>();
+
+        for (PostDto postDto : collect) {
+            int userId = postDto.getUser().getId();
+            AddressDto addressDto = null;
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+            } catch (FeignException.NotFound ex) {
+                logger.error("address not found for User with id: {}", userId);
+            }
+
+            postDto.getUser().setAddressDto(addressDto);
+            postDtoList.add(postDto);
+        }
         logger.info("got post by category: {}", collect);
-        return collect;
+        return postDtoList;
     }
 
     /**
@@ -322,8 +386,9 @@ public class PostServiceImpl implements PostService {
                                 .contact(post.getUser().getContact())
                                 .email(post.getUser().getEmail())
                                 .password(post.getUser().getPassword())
+                                .about(post.getUser().getAbout())
                                 .role(post.getUser().getRole())
-                                .about(post.getUser().getAbout()).build())
+                                .addressDto(null).build())
                         .comments(
                                 post.getComments().stream()
                                         .map(comment -> CommentDto.builder().id(comment.getId())
@@ -334,8 +399,18 @@ public class PostServiceImpl implements PostService {
 
         List<PostDto> postDtoList = new ArrayList<>();
 
+        for (PostDto postDto : collect) {
+            AddressDto addressDto = null;
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+            } catch (FeignException.NotFound ex) {
+                logger.error("address not found for User with id: {}", userId,ex.getMessage());
+            }
+            postDto.getUser().setAddressDto(addressDto);
+            postDtoList.add(postDto);
+        }
         logger.info("got post by user: {}", collect);
-        return collect;
+        return postDtoList;
     }
 
     /**
@@ -364,8 +439,9 @@ public class PostServiceImpl implements PostService {
                                 .password(post.getUser().getPassword())
                                 .about(post.getUser().getAbout())
                                 .role(post.getUser().getRole())
-                                .build())
-                                .comments(post.getComments().stream()
+                                .addressDto(null).build())
+                        .comments(
+                                post.getComments().stream()
                                         .map(comment -> CommentDto.builder().id(comment.getId())
                                                 .content(comment.getContent()).build())
                                         .collect(Collectors.toSet()))
@@ -376,7 +452,19 @@ public class PostServiceImpl implements PostService {
 
         List<PostDto> postDtoList = new ArrayList<>();
 
-        return collect;
+        for (PostDto postDto : collect) {
+            int userId = postDto.getUser().getId();
+            AddressDto addressDto = null;
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+            } catch (FeignException.NotFound ex) {
+                logger.error("address not found for User with id: {}", userId);
+            }
+
+            postDto.getUser().setAddressDto(addressDto);
+            postDtoList.add(postDto);
+        }
+        return postDtoList;
     }
 
     /**
@@ -394,15 +482,29 @@ public class PostServiceImpl implements PostService {
                 .map(user -> UserDto.builder().id(user.getId())
                         .firstName(user.getFirstName())
                         .lastName(user.getLastName())
+                        .contact(user.getContact())
                         .email(user.getEmail())
                         .password(user.getPassword())
                         .about(user.getAbout())
                         .role(user.getRole())
-                        .build())
-                .toList();
+                        .addressDto(null).build())
+                .collect(Collectors.toList());
 
         List<UserDto> userDtoList = new ArrayList<>();
 
-        return collect;
+        for (UserDto userDto : collect) {
+            int userId = userDto.getId();
+            AddressDto addressDto = null;
+            try {
+                addressDto = addressClient.getAddressByUserId(userId);
+            } catch (FeignException.NotFound ex) {
+                logger.error("address not found for User with id: {}", userId);
+            }
+
+            userDto.setAddressDto(addressDto);
+            userDtoList.add(userDto);
+        }
+
+        return userDtoList;
     }
 }

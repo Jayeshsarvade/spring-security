@@ -3,11 +3,16 @@ package com.springsecurity.Spring_security.controller;
 
 import com.springsecurity.Spring_security.dto.PostDto;
 import com.springsecurity.Spring_security.dto.UserDto;
+import com.springsecurity.Spring_security.entity.Post;
 import com.springsecurity.Spring_security.payload.ApiResponse;
 import com.springsecurity.Spring_security.payload.AppConstantsPost;
 import com.springsecurity.Spring_security.payload.PostResponse;
 import com.springsecurity.Spring_security.service.FileService;
 import com.springsecurity.Spring_security.service.PostService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,8 +49,14 @@ public class PostController {
      * @throws IllegalArgumentException If the user id or category id is invalid.
      * @throws ChangeSetPersister.NotFoundException If the user id or category id is not found.
      */
-
-
+    @Operation(summary = "Create Post")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Post created successfully",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid user id or category id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User id or category id not found",
+                    content = @Content) })
     @PostMapping(value = "/user/{userId}/category/{categoryId}/posts",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostDto> createPost(
             @Valid @RequestBody PostDto postDto,
@@ -64,7 +75,14 @@ public class PostController {
      * @throws IllegalArgumentException If the provided userId is invalid.
      * @throws ChangeSetPersister.NotFoundException If the user with the provided userId is not found.
      */
-
+    @Operation(summary = "Get Posts By User")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found the posts",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid userId supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @GetMapping(value = "/user/{userId}/posts",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<PostDto>> getPostByUser(
             @PathVariable Integer userId) {
@@ -81,7 +99,14 @@ public class PostController {
      * @throws IllegalArgumentException If the provided categoryId is invalid.
      * @throws ChangeSetPersister.NotFoundException If the category with the provided categoryId is not found.
      */
-
+    @Operation(summary = "Get Posts By Category")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found the posts",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid categoryId supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @GetMapping(value = "/category/{categoryId}/posts",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<PostDto>> getPostsByCategory(
             @PathVariable Integer categoryId) {
@@ -98,7 +123,14 @@ public class PostController {
      * @throws IllegalArgumentException If the provided postId is invalid.
      * @throws ChangeSetPersister.NotFoundException If the post with the provided postId is not found.
      */
-
+    @Operation(summary = "Get Post By Its Id")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found the post",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @GetMapping(value = "/posts/{postId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostDto> getPost(@PathVariable Integer postId) {
         PostDto postById = postService.getPostById(postId);
@@ -116,7 +148,12 @@ public class PostController {
      *         The HTTP status code of the response is 200 (OK).
      * @throws ChangeSetPersister.NotFoundException If no posts are found.
      */
-
+    @Operation(summary = "Get All Posts")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found the posts",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Posts not found",
+                    content = @Content) })
     @GetMapping(value = "/posts/",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostResponse> getAllPost(
             @RequestParam(value = "pageNo", defaultValue = AppConstantsPost.PAGE_NO, required = false) Integer pageNo,
@@ -137,8 +174,14 @@ public class PostController {
      * @throws IllegalArgumentException If the provided postId is invalid.
      * @throws ChangeSetPersister.NotFoundException If the post with the provided postId is not found.
      */
-
-
+    @Operation(summary = "Delete Post By Its Id")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post deleted",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @DeleteMapping(value = "/posts/{postId}" ,produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse> deletePost(@PathVariable Integer postId) {
         postService.deletePost(postId);
@@ -154,8 +197,14 @@ public class PostController {
      * @throws IllegalArgumentException If the provided postId is invalid.
      * @throws ChangeSetPersister.NotFoundException If the post with the provided postId is not found.
      */
-
-
+    @Operation(summary = "Update post By Its Id")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "post Updated Successfully",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @PutMapping(value = "/posts/{postId}",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PostDto> updatePost(@RequestBody PostDto postDto, @PathVariable Integer postId) {
         PostDto update = postService.updatePost(postDto, postId);
@@ -170,7 +219,12 @@ public class PostController {
      *         The HTTP status code of the response is 200 (OK).
      * @throws ChangeSetPersister.NotFoundException If no posts are found that match the keyword.
      */
-
+    @Operation(summary = "Search post By Its keyword")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found post Successfully",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found",
+                    content = @Content) })
     @GetMapping(value = "/posts/search/{keyword}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<PostDto>> searchPosts(@PathVariable String keyword) {
         List<PostDto> posts = postService.searchPosts(keyword);
@@ -185,7 +239,14 @@ public class PostController {
      * @return A ResponseEntity containing the updated post data with the uploaded image name.
      * @throws IOException If an error occurs during file upload.
      */
-
+    @Operation(summary = "File Upload")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "File uploaded successfully",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid post id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "post id not found",
+                    content = @Content) })
     @PostMapping(value = "/post/image/upload/{postId}")
     public ResponseEntity<PostDto> fileUpload(
             @RequestParam("image") MultipartFile image,
@@ -207,8 +268,14 @@ public class PostController {
      *         The HTTP status code of the response is 200 (OK).
      * @throws ChangeSetPersister.NotFoundException If the post with the provided postId is not found.
      */
-
-
+    @Operation(summary = "Get Users Who Commented")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Found the User",
+                    content = { @Content(mediaType = "application/json", schema = @Schema(implementation = Post.class)) }),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid id supplied",
+                    content = @Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found",
+                    content = @Content) })
     @GetMapping(value = "post/postId/{postId}")
     public ResponseEntity<List<UserDto>> getUsersWhoCommented(@PathVariable int postId){
     	List<UserDto> usersWhoCommented = postService.getUsersWhoCommented(postId);

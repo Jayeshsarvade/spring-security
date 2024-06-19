@@ -12,6 +12,6 @@ public interface UserService {
     UserDto getUser(int userId);
     UserResponse getAllUser(Integer pageNo, Integer pageSize, String sortBy, String sortDir);
     List<UserDto> getAllUsersByRole(Role role);
-    public UserDto updateUSer(SignUpRequest signUpRequest, Integer userId);
+    public SignUpRequest updateUser(SignUpRequest signUpRequest, Integer userId);
     public void deleteUser(Integer userId);
 }

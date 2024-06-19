@@ -26,6 +26,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    /**
+     * This method is used to create a new category in the system.
+     *
+     * @param categoryDto The DTO object containing the details of the category to be created.
+     * @return The DTO object of the newly created category.
+     * @throws IllegalArgumentException If the input DTO object is null.
+     */
     @Override
     public CategoryDto createCategory(CategoryDto categoryDto) {
         logger.info("Creating category: {}", categoryDto);
@@ -42,6 +49,14 @@ public class CategoryServiceImpl implements CategoryService {
                 .categoryDescription(category.getCategoryDescription()).build();
     }
 
+    /**
+     * This method is used to update an existing category in the system.
+     *
+     * @param categoryDto The DTO object containing the updated details of the category.
+     * @param categoryId The unique identifier of the category to be updated.
+     * @return The DTO object of the updated category.
+     * @throws ResourceNotFoundException If the category with the given categoryId does not exist.
+     */
     @Override
     public CategoryDto updateCategory(CategoryDto categoryDto, Integer categoryId) {
         logger.info("Updating category with Id {}: {}", categoryDto, categoryId);
@@ -57,6 +72,12 @@ public class CategoryServiceImpl implements CategoryService {
                 .categoryDescription(category.getCategoryDescription()).build();
     }
 
+    /**
+     * This method is used to delete an existing category in the system.
+     *
+     * @param categoryId The unique identifier of the category to be deleted.
+     * @throws ResourceNotFoundException If the category with the given categoryId does not exist.
+     */
     @Override
     public void deleteCategory(Integer categoryId) {
         logger.info("deleting category with Id: {}", categoryId);
@@ -66,6 +87,13 @@ public class CategoryServiceImpl implements CategoryService {
         logger.info("Category deleted successfully....");
     }
 
+    /**
+     * This method retrieves a specific category from the system based on the provided categoryId.
+     *
+     * @param categoryId The unique identifier of the category to be retrieved.
+     * @return The DTO object of the requested category.
+     * @throws ResourceNotFoundException If the category with the given categoryId does not exist.
+     */
     @Override
     public CategoryDto getCategory(Integer categoryId) {
         Category category = categoryRepository.findById(categoryId)
@@ -77,6 +105,15 @@ public class CategoryServiceImpl implements CategoryService {
                 .categoryDescription(category.getCategoryDescription()).build();
     }
 
+    /**
+     * This method retrieves all categories from the system with pagination, sorting, and filtering.
+     *
+     * @param pageNo The page number to retrieve.
+     * @param pageSize The number of categories to retrieve per page.
+     * @param sortBy The field to sort the categories by.
+     * @param sortDir The direction to sort the categories (asc or desc).
+     * @return A CategoryResponse object containing the details of the retrieved categories.
+     */
     @Override
     public CategoryResponse getAllCategory(Integer pageNo, Integer pageSize, String sortBy, String sortDir) {
         logger.info("Fetching all category with pageNo: {}, pageSize: {}, sortBy: {}, sortDir: {}", pageNo, pageSize, sortBy, sortDir);
