@@ -2,6 +2,7 @@ package com.springsecurity.Spring_security.payload;
 
 import com.springsecurity.Spring_security.dto.UserDto;
 import lombok.*;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 
@@ -10,7 +11,6 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString
 public class UserResponse {
 
     private List<UserDto> content;
@@ -19,4 +19,5 @@ public class UserResponse {
     private long totalElement;
     private int totalPages;
     private boolean lastPage;
+
 }

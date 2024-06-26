@@ -2,6 +2,7 @@ package com.springsecurity.Spring_security.controller;
 
 import com.springsecurity.Spring_security.dto.CategoryDto;
 import com.springsecurity.Spring_security.entity.Category;
+import com.springsecurity.Spring_security.exception.ResourceNotFoundException;
 import com.springsecurity.Spring_security.payload.ApiResponse;
 import com.springsecurity.Spring_security.payload.AppConstantsCategory;
 import com.springsecurity.Spring_security.payload.CategoryResponse;
@@ -39,8 +40,12 @@ public class CategoryController {
     @PostMapping(value = "/", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CategoryDto> crateCategory(@Valid @RequestBody CategoryDto categoryDto){
         CategoryDto category = categoryService.createCategory(categoryDto);
-        return new ResponseEntity<CategoryDto>(category, HttpStatus.CREATED);
+        if (category == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+        return new ResponseEntity<>(category, HttpStatus.CREATED);
     }
+
 
     /**
      * This method is used to update an existing category by its id.
@@ -64,8 +69,18 @@ public class CategoryController {
             @Valid @RequestBody CategoryDto categoryDto,
             @PathVariable Integer categoryId
     ){
-        CategoryDto updateCat = categoryService.updateCategory(categoryDto, categoryId);
-        return new ResponseEntity<CategoryDto>(updateCat,HttpStatus.OK);
+        if (categoryId == null){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if (categoryDto == null){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        try {
+            CategoryDto updatedCategory = categoryService.updateCategory(categoryDto, categoryId);
+            return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     /**
@@ -87,8 +102,15 @@ public class CategoryController {
                     content = @Content) })
     @DeleteMapping(value = "/{categoryId}",produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse> deleteCategory(@PathVariable Integer categoryId){
-        categoryService.deleteCategory(categoryId);
-        return new ResponseEntity<ApiResponse>(new ApiResponse("category is deleted",true),HttpStatus.OK);
+        if (categoryId == null){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        try {
+            categoryService.deleteCategory(categoryId);
+            return new ResponseEntity<>(new ApiResponse("category is deleted", true), HttpStatus.OK);
+        } catch (ResourceNotFoundException e) {
+            return new ResponseEntity<>(new ApiResponse("category not found", false), HttpStatus.BAD_REQUEST);
+        }
     }
 
     /**
@@ -111,8 +133,18 @@ public class CategoryController {
                     content = @Content) })
     @GetMapping(value = "/{categoryId}" , produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CategoryDto> getCategory(@PathVariable Integer categoryId) {
-        CategoryDto category = categoryService.getCategory(categoryId);
-        return new ResponseEntity<CategoryDto>(category, HttpStatus.OK);
+        if (categoryId == null || categoryId < 0 || categoryId == 0){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        if (categoryId == null){
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        try {
+            CategoryDto category = categoryService.getCategory(categoryId);
+            return new ResponseEntity<>(category, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
 
     /**
@@ -141,7 +173,11 @@ public class CategoryController {
             @RequestParam(value = "sortBy", defaultValue = AppConstantsCategory.SORT_BY, required = false) String sortBy,
             @RequestParam(value = "sortDir", defaultValue = AppConstantsCategory.SORT_DIR, required = false) String sortDir
     ){
-        CategoryResponse allCategory = categoryService.getAllCategory(pageNo, pageSize, sortBy, sortDir);
-        return new ResponseEntity<CategoryResponse>(allCategory,HttpStatus.OK);
+        try {
+            CategoryResponse categoryResponse = categoryService.getAllCategory(pageNo, pageSize, sortBy, sortDir);
+            return ResponseEntity.ok(categoryResponse);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

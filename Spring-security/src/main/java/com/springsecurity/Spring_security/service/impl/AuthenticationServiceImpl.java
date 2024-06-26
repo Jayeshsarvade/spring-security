@@ -1,9 +1,6 @@
 package com.springsecurity.Spring_security.service.impl;
 
-import com.springsecurity.Spring_security.dto.JwtAuthenticationResponse;
-import com.springsecurity.Spring_security.dto.RefreshTokenRequest;
-import com.springsecurity.Spring_security.dto.SignInRequest;
-import com.springsecurity.Spring_security.dto.SignUpRequest;
+import com.springsecurity.Spring_security.dto.*;
 import com.springsecurity.Spring_security.entity.Role;
 import com.springsecurity.Spring_security.entity.User;
 import com.springsecurity.Spring_security.repository.UserRepository;
@@ -37,7 +34,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @return A ResponseEntity containing the created user data and a HTTP status code of 201 (Created).
      * @throws IllegalArgumentException If the userDto is null or invalid.
      */
-    public User signUp(SignUpRequest signUpRequest) {
+    public UserDto signUp(SignUpRequest signUpRequest) {
         User user = new User();
         user.setEmail(signUpRequest.getEmail());
         user.setFirstName(signUpRequest.getFirstName());
@@ -47,7 +44,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setRole(Role.USER);
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        return UserDto.builder()
+                .id(savedUser.getId())
+                .firstName(savedUser.getFirstName())
+                .lastName(savedUser.getLastName())
+                .contact(savedUser.getContact())
+                .email(savedUser.getEmail())
+                .password(savedUser.getPassword())
+                .about(savedUser.getAbout())
+                .role(savedUser.getRole())
+                .build();
     }
 
     /**
@@ -77,7 +85,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      *
      * @param refreshTokenRequest The DTO object containing the refresh token.
      * @return A JwtAuthenticationResponse object containing the newly generated JWT and the same refresh token.
-     *         If the refresh token is invalid or expired, it returns null.
+     * If the refresh token is invalid or expired, it returns null.
      * @throws IllegalArgumentException If the provided refresh token is invalid or the user does not exist.
      */
 

@@ -115,53 +115,74 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostDto updatePost(PostDto postDto, Integer postId) {
-        logger.info("updating post: {} {}", postDto, postId);
+        logger.info("Updating post: {} {}", postDto, postId);
+
+        // Fetch the post from the repository
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("post", "postId", postId));
+
+        // Update post details
         post.setTitle(postDto.getTitle());
         post.setContent(postDto.getContent());
         post.setImageName(postDto.getImageName());
-        Post save = postRepository.save(post);
-        logger.info("post updated: {} ", save);
 
-        AddressDto addressDto = null;
-        UserDto userDtoGetUser = postDto.getUser();
-        if (userDtoGetUser != null) {
-            int userId = postDto.getUser().getId();
-            try {
-                addressDto = addressClient.getAddressByUserId(userId);
-                userDtoGetUser.setAddressDto(addressDto);
-            } catch (FeignException.NotFound ex) {
-                String errorMessage = String.format("address not found with UserId: %d", userId);
-                logger.error(errorMessage);
-                userDtoGetUser.setAddressDto(null);
-            }
-        }
+        // Save the updated post
+        Post savedPost = postRepository.save(post);
+        logger.info("Post updated: {}", savedPost);
 
-        Set<CommentDto> commentsList = new HashSet<>();
-        for (Comment comment : post.getComments()) {
-            commentsList.add(CommentDto.builder().id(comment.getId()).content(comment.getContent()).build());
-        }
+        // Fetch the user details and address
+        User user = userRepository.findById(post.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("user", "userId", post.getUser().getId()));
 
-        CategoryDto categoryDto = CategoryDto.builder().categoryId(post.getCategory().getCategoryId())
-                .categoryTitle(post.getCategory().getCategoryTitle())
-                .categoryDescription(post.getCategory().getCategoryDescription()).build();
+        logger.debug("User found: {}", user);
 
         UserDto userDto = UserDto.builder()
-                .id(post.getUser().getId())
-                .firstName(post.getUser().getFirstName())
-                .lastName(post.getUser().getLastName())
-                .contact(post.getUser().getContact())
-                .email(post.getUser().getEmail())
-                .password(post.getUser().getPassword())
-                .about(post.getUser().getAbout())
-                .role(post.getUser().getRole())
-                .addressDto(addressDto).build();
+                .id(user.getId())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .contact(user.getContact())
+                .about(user.getAbout())
+                .email(user.getEmail())
+                .password(user.getPassword())
+                .role(user.getRole())
+                .build();
 
-        return PostDto.builder().postId(post.getPostId()).title(post.getTitle()).content(post.getContent())
-                .imageName(post.getImageName()).addedDate(post.getAddDate()).category(categoryDto).user(userDto)
-                .comments(commentsList).build();
+        try {
+            AddressDto addressDto = addressClient.getAddressByUserId(user.getId());
+            userDto.setAddressDto(addressDto);
+        } catch (FeignException.NotFound ex) {
+            String errorMessage = String.format("Address not found for userId: %d", user.getId());
+            logger.error(errorMessage);
+            userDto.setAddressDto(null);
+        }
 
+        // Create a set of CommentDto from the post's comments
+        Set<CommentDto> commentsList = new HashSet<>();
+        for (Comment comment : post.getComments()) {
+            commentsList.add(CommentDto.builder()
+                    .id(comment.getId())
+                    .content(comment.getContent())
+                    .build());
+        }
+
+        // Build the CategoryDto
+        CategoryDto categoryDto = CategoryDto.builder()
+                .categoryId(post.getCategory().getCategoryId())
+                .categoryTitle(post.getCategory().getCategoryTitle())
+                .categoryDescription(post.getCategory().getCategoryDescription())
+                .build();
+
+        // Return the updated PostDto
+        return PostDto.builder()
+                .postId(post.getPostId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .imageName(post.getImageName())
+                .addedDate(post.getAddDate())
+                .category(categoryDto)
+                .user(userDto) // Set the populated userDto with address
+                .comments(commentsList)
+                .build();
     }
 
     /**

@@ -3,6 +3,12 @@ package com.springsecurity.Spring_security.dto;
 import com.springsecurity.Spring_security.entity.Role;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.List;
 
 @Getter
 @Setter
@@ -10,7 +16,7 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 @Builder
-public class UserDto {
+public class UserDto implements UserDetails {
 
     private Integer id;
     @NotBlank(message = "FirstName cannot be blank")
@@ -40,4 +46,34 @@ public class UserDto {
     private Role role;
 
     private AddressDto addressDto;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

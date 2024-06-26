@@ -130,29 +130,49 @@ public class UserServiceImpl implements UserService {
      * @throws FeignException If an error occurs while fetching the address associated with a user.
      */
     @Override
-    public List<UserDto> getAllUsersByRole(Role role) {
+    public UserResponse getAllUsersByRole(Role role, int pageNo, int pageSize, String sortBy,String sortDir) {
 
-        List<User> users = userRepository.findByRole(role);
+        logger.info("Fetching all users with role: {} with pageNo: {}, pageSize: {}, sortBy: {}, sortDir: {}", role, pageNo, pageSize, sortBy, sortDir);
+
+        Sort sort = sortDir.equalsIgnoreCase("asc") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+        Page<User> pageUsers = userRepository.findByRole(role, pageable);
+        List<User> users = pageUsers.getContent();
 
         List<UserDto> userDtoList = new ArrayList<>();
+
         for (User user : users) {
             AddressDto addressDto = null;
             try {
                 addressDto = addressClient.getAddressByUserId(user.getId());
             } catch (FeignException.NotFound ex) {
-                logger.error("address not found for user with Id: {}", user.getId());
+                logger.error("Address not found for user with Id: {}", user.getId());
             }
-            UserDto userDto = UserDto.builder().id(user.getId()).firstName(user.getFirstName())
+            UserDto userDto = UserDto.builder()
+                    .id(user.getId())
+                    .firstName(user.getFirstName())
                     .lastName(user.getLastName())
                     .contact(user.getContact())
                     .about(user.getAbout())
                     .email(user.getEmail())
                     .password(user.getPassword())
-                    .role(user.getRole()).build();
-            userDto.setAddressDto(addressDto);
+                    .role(user.getRole())
+                    .addressDto(addressDto)
+                    .build();
+
             userDtoList.add(userDto);
         }
-        return userDtoList;
+
+        UserResponse userResponse = new UserResponse();
+        userResponse.setContent(userDtoList);
+        userResponse.setPageNo(pageUsers.getNumber());
+        userResponse.setPageSize(pageUsers.getSize());
+        userResponse.setTotalElement(pageUsers.getTotalElements());
+        userResponse.setTotalPages(pageUsers.getTotalPages());
+        userResponse.setLastPage(pageUsers.isLast());
+
+        logger.info("Returning user response for role {}: {}", role, userResponse);
+        return userResponse;
     }
     /**
      * This method updates a user in the system.
@@ -173,6 +193,7 @@ public class UserServiceImpl implements UserService {
         user.setContact(signUpRequest.getContact());
         user.setEmail(signUpRequest.getEmail());
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
+        user.setRole(Role.USER);
         user.setAbout(signUpRequest.getAbout());
         User save = userRepository.save(user);
         logger.info("User updated successfully: {}", save);
@@ -190,7 +211,8 @@ public class UserServiceImpl implements UserService {
                 .lastName(user.getLastName())
                 .contact(user.getContact())
                 .email(user.getEmail())
-                .password(user.getPassword()).about(user.getAbout()).build();
+                .password(user.getPassword()).about(user.getAbout())
+                .role(user.getRole()).build();
         signUpRequest2.setAddressDto(addressByUserId);
         return signUpRequest2;
     }

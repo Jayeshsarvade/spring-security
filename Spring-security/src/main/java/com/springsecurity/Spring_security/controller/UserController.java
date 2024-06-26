@@ -4,6 +4,7 @@ import com.springsecurity.Spring_security.dto.SignUpRequest;
 import com.springsecurity.Spring_security.dto.UserDto;
 import com.springsecurity.Spring_security.entity.Role;
 import com.springsecurity.Spring_security.entity.User;
+import com.springsecurity.Spring_security.exception.UserNotFoundException;
 import com.springsecurity.Spring_security.payload.ApiResponse;
 import com.springsecurity.Spring_security.payload.AppConstantsUser;
 import com.springsecurity.Spring_security.payload.UserResponse;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -92,9 +94,25 @@ public class UserController {
                     content = { @Content(mediaType = "application/json", schema = @Schema(implementation = User.class)) }),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found") })
     @GetMapping("/userRole")
-    public ResponseEntity<List<UserDto>> getAllUsersByRole(@RequestParam Role role){
-        List<UserDto> allUsersByRole = userService.getAllUsersByRole(role);
-        return new ResponseEntity<List<UserDto>>(allUsersByRole,HttpStatus.OK);
+    public ResponseEntity<UserResponse> getAllUsersByRole(
+            @RequestParam(required = false) Role role,
+            @RequestParam(value = "pageNo", defaultValue = AppConstantsUser.PAGE_NO, required = false) Integer pageNo,
+            @RequestParam(value = "pageSize", defaultValue = AppConstantsUser.PAGE_SIZE, required = false) Integer pageSize,
+            @RequestParam(value = "sortBy", defaultValue = AppConstantsUser.SORT_BY, required = false) String sortBy,
+            @RequestParam(value = "sortDir", defaultValue = AppConstantsUser.SORT_DIR, required = false) String sortDir
+            ){
+        if (role == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (pageNo < 0 || pageSize <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        UserResponse allUsersByRole = userService.getAllUsersByRole(role, pageNo, pageSize, sortBy, sortDir);
+        if (allUsersByRole != null && !allUsersByRole.getContent().isEmpty()) {
+            return ResponseEntity.ok(allUsersByRole);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**
@@ -115,9 +133,17 @@ public class UserController {
                     content = @Content) })
     @PutMapping(value = "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<SignUpRequest> updateUser(@Valid @RequestBody SignUpRequest signUpRequest, @PathVariable Integer userId){
-        SignUpRequest updatedUSer = userService.updateUser(signUpRequest, userId);
-        return new ResponseEntity<>(updatedUSer,HttpStatus.OK);
+        if (userId <= 0){
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+            SignUpRequest updatedUser = userService.updateUser(signUpRequest, userId);
+            return ResponseEntity.ok(updatedUser);
+        } catch (UserNotFoundException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
+
 
     /**
      * This method is used to delete a user from the system.

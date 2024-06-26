@@ -26,18 +26,16 @@ public class SpringSecurityApplication implements CommandLineRunner {
 	@Override
 	public void run(String... args) throws Exception {
 		List<User> adminAccount = userRepository.findByRole(Role.ADMIN);
-		for (User user1 : adminAccount) {
-			if (user1 == null) {
-				User user = new User();
-				user.setEmail("admin@gmail.com");
-				user.setFirstName("admin");
-				user.setLastName("admin");
-				user.setRole(Role.ADMIN);
-				user.setPassword(new BCryptPasswordEncoder().encode("admin"));
-				user.setContact(9989876765l);
-				user.setAbout("I am admin");
-				userRepository.save(user);
-			}
+		if (adminAccount.isEmpty()) {
+			User user = new User();
+			user.setEmail("admin@gmail.com");
+			user.setFirstName("admin");
+			user.setLastName("admin");
+			user.setRole(Role.ADMIN);
+			user.setPassword(new BCryptPasswordEncoder().encode("admin"));
+			user.setContact(9989876765L);
+			user.setAbout("I am admin");
+			userRepository.save(user);
 		}
 	}
 }
