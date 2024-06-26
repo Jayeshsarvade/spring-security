@@ -69,6 +69,10 @@ public class UserServiceImpl implements UserService {
             String errorMessage = String.format("address not found with UserId: %d", userId);
             logger.error(errorMessage);
             userDto.setAddressDto(null);
+        }catch (Exception ex) {
+            String errorMessage = String.format("Error occurred while fetching address for UserId: %d", userId);
+            logger.error(errorMessage, ex);
+            userDto.setAddressDto(null);
         }
         return userDto;
     }
@@ -99,6 +103,8 @@ public class UserServiceImpl implements UserService {
                 addressDto = addressClient.getAddressByUserId(user.getId());
             } catch (FeignException.NotFound ex) {
                 logger.error("address not found for user with Id: {}", user.getId());
+            }catch (Exception ex) {
+                logger.error("Error occurred while fetching address for user with Id: {}", user.getId(), ex);
             }
             UserDto userDto = UserDto.builder().id(user.getId()).firstName(user.getFirstName())
                     .lastName(user.getLastName())
@@ -147,6 +153,8 @@ public class UserServiceImpl implements UserService {
                 addressDto = addressClient.getAddressByUserId(user.getId());
             } catch (FeignException.NotFound ex) {
                 logger.error("Address not found for user with Id: {}", user.getId());
+            }catch (Exception ex) {
+                logger.error("Error occurred while fetching address for user with Id: {}", user.getId(), ex);
             }
             UserDto userDto = UserDto.builder()
                     .id(user.getId())
@@ -204,6 +212,10 @@ public class UserServiceImpl implements UserService {
         } catch (FeignException.NotFound ex) {
             String errorMessage = String.format("address not found with UserId: %d", userId);
             logger.error(errorMessage);
+            signUpRequest.setAddressDto(null);
+        }catch (Exception ex) {
+            String errorMessage = String.format("Error occurred while fetching address for UserId: %d", userId);
+            logger.error(errorMessage, ex);
             signUpRequest.setAddressDto(null);
         }
         SignUpRequest signUpRequest2 = SignUpRequest.builder().id(user.getId())

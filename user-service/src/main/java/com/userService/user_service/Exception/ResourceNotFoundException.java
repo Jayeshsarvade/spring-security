@@ -32,4 +32,9 @@ public class ResourceNotFoundException extends RuntimeException{
         this.message = message;
     }
 
+    @Override
+    public String getMessage() {
+        return String.format("%s not found with %s: %d", resourceName, fieldName, fieldValue);
+    }
+
 }
